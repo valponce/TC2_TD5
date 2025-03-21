@@ -30,7 +30,7 @@ class FenPrincipale(Tk):
         self.__mot_affiche=None
         self.__mot=""
         self.__trouve=[]
-        self.__nb_manque=0
+        self.__nb_manques=0
         self.chargeMots()
         
         
@@ -75,28 +75,30 @@ class FenPrincipale(Tk):
         boutonQuitter.config(command=self.destroy)
         boutonNouvellePartie.config(command=self.nouvelle_partie)
     
-    def chercher_lettre(self,lettre,mot):
-        position=[]
-        for i in range(len(mot)):
-            if mot[i]==lettre:
-                position.append(i)
-        return position
-    
-    def afficher_lettre(self,position,lettre):
-        for k in position:
-            self.__trouve[k]=lettre
-        
-        self.__mot_afficher.config(text="Mot :"+separateur.join(self.__trouve))
+
         
     def traitement(self,lettre):
+        valeur=False
         for i in range(len(self.__mot)):
             if self.__mot[i]==lettre:
                 self.__trouve[i]=lettre
+                valeur=True
         separateur=""
-        self.__mot_afficher.config(text="Mot :"+str(separateur.join(self.__trouve))) 
-        #position=self.chercher_lettre(lettre,self.__mot)
-        #self.afficher_lettre(position,lettre)
-        
+        texte="Mot :"+str(separateur.join(self.__trouve))
+        self.__mot_afficher.config(text=texte) 
+        if not(valeur):
+            self.__nb_manques+=1
+        self.fin_partie(texte)
+
+    def fin_partie(self,texte):
+        if texte[5:]==self.__mot:
+            for b in self.__boutons:
+                b.config(state="disabled")
+            self.__mot_afficher.config(text="Vous avez gagné. Le mot était:"+self.__mot)
+        if self.__nb_manques==10:
+            for b in self.__boutons:
+                b.config(state="disabled")
+            self.__mot_afficher.config(text="PERDU")
         
     def chargeMots(self):
         f = open('mots.txt', 'r')
@@ -111,6 +113,7 @@ class FenPrincipale(Tk):
         
             
     def nouveau_mot(self):
+        self.__nb_manques=0
         self.__mot=self.__mots[randint(0,len(self.__mots)-1)]#on tire un eniter au hasard entre 0 et la longueur de la liste mot 
         self.__nb_manques=len(self.__mot)
         self.__trouve=["*" for i in range (len(self.__mot))]
