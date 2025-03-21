@@ -90,6 +90,7 @@ class FenPrincipale(Tk):
             self.__nb_manques+=1
         self.fin_partie(texte)
 
+
     def fin_partie(self,texte):
         if texte[5:]==self.__mot:
             for b in self.__boutons:
@@ -107,15 +108,14 @@ class FenPrincipale(Tk):
         f.close()
 
     def nouvelle_partie(self):
+        self.__nb_manques=0
         self.nouveau_mot()
         for b in self.__boutons:
             b.config(state="normal")
         
             
     def nouveau_mot(self):
-        self.__nb_manques=0
         self.__mot=self.__mots[randint(0,len(self.__mots)-1)]#on tire un eniter au hasard entre 0 et la longueur de la liste mot 
-        self.__nb_manques=len(self.__mot)
         self.__trouve=["*" for i in range (len(self.__mot))]
         self.__mot_afficher.config(text="Mot :"+"*"*len(self.__mot))
             
