@@ -17,7 +17,11 @@ class ZoneAffichage(Canvas):
        couleur=colorchooser.askcolor()[1]
        for i in range(4):
            self.formes[i].set_couleur(couleur)
-       
+    
+    def setCouleurPendu(self):
+       couleur=colorchooser.askcolor()[1]
+       for i in range(4,10):
+           self.formes[i].set_couleur(couleur)
    
 class MonBoutonLettre(Button):
     def __init__(self,parent,i):
@@ -39,6 +43,7 @@ class FenPrincipale(Tk):
         #self.__lettres=[chr(ord('A')+i) for i in range(26)]
         self.__boutons=[]
         self.__listeMots=None
+        self.__mot_affiche=None
         self.__mot=""
         self.__trouve=[]
         self.__essais=[]
@@ -49,8 +54,8 @@ class FenPrincipale(Tk):
         #Création barre outils
         self.__barreOutils= Frame(self,bg="light blue")
         self.__barreOutils.pack(side=TOP, padx=30,pady=10)
-               
         
+       
         boutonNouvellePartie=Button(self.__barreOutils, text='Nouvelle partie',bg="white")
         boutonNouvellePartie.pack(side=LEFT, padx=10, pady=5)
         
@@ -66,8 +71,8 @@ class FenPrincipale(Tk):
         
         menuCouleur = Menu(boutonCouleur)
         menuCouleur.add_command(label = "Couleur de l'échafaudage", command = self.canvas.setCouleurEchafaudage)
-        #menuCouleur.add_command(label = 'Couleur du pendu', command = self.canvas.setCouleurPendu)
-        #menuCouleur.add_command(label = "Couleur du background", command = self.setCouleurBg)
+        menuCouleur.add_command(label = 'Couleur du pendu', command = self.canvas.setCouleurPendu)
+        menuCouleur.add_command(label = "Couleur du background", command = self.setCouleurBg)
         
         boutonCouleur.config(menu=menuCouleur)
       
@@ -93,15 +98,21 @@ class FenPrincipale(Tk):
                Lettre.grid(row=4, column=i-20,padx=5, pady=5)
         
         #Emplacement du mot
-        self.__Mot=Label(self,text="Mot:")
-        self.__Mot.pack(side=BOTTOM,padx=30,pady=10)
+        Mot=Label(self,text="Mot:")
+        self.__mot_afficher=Mot
+        Mot.pack(side=BOTTOM,padx=30,pady=10)
+        
         
         boutonQuitter.config(command=self.destroy)
         boutonNouvellePartie.config(command=self.nouvelle_partie)
         boutonUndo.config(command=self.retour_en_arriere)
-    
+        
 
-    
+    def setCouleurBg(self):
+        couleur=couleur=colorchooser.askcolor()[1]
+        self.configure(bg=couleur)
+        self.__barreOutils.config(bg=couleur)
+        
     def retour_en_arriere(self):
         if self.__essais:
             lettre,valeur=self.__essais.pop()
@@ -115,7 +126,7 @@ class FenPrincipale(Tk):
                         self.__trouve[i]="*"
                 separateur=""
                 texte="Mot :"+str(separateur.join(self.__trouve))
-                self.__Mot.config(text=texte) 
+                self.__mot_afficher.config(text=texte) 
             
     def traitement(self,lettre):
         valeur=False
@@ -125,7 +136,7 @@ class FenPrincipale(Tk):
                 valeur=True
         separateur=""
         texte="Mot :"+str(separateur.join(self.__trouve))
-        self.__Mot.config(text=texte) 
+        self.__mot_afficher.config(text=texte) 
         if not(valeur):
             self.canvas.formes[self.__nb_manques].set_state('normal')
             self.__nb_manques+=1
@@ -134,15 +145,16 @@ class FenPrincipale(Tk):
 
 
     def fin_partie(self,texte):
-        self.__essais=[]
         if texte[5:]==self.__mot:
             for b in self.__boutons:
                 b.config(state="disabled")
-            self.__Mot.config(text="Vous avez gagné. Le mot était:"+self.__mot)
+            self.__mot_afficher.config(text="Vous avez gagné. Le mot était:"+self.__mot)
+            self.__essais=[] #empêche de Undo quand la partie est gagné
         if self.__nb_manques==10:
             for b in self.__boutons:
                 b.config(state="disabled")
-            self.__Mot.config(text="PERDU")
+            self.__mot_afficher.config(text="PERDU")
+            self.__essais=[] #empêche de Undo quand la partie est perdu
         
     def chargeMots(self):
         f = open('mots.txt', 'r')
@@ -163,7 +175,7 @@ class FenPrincipale(Tk):
             f.set_state('hidden')
         self.__mot=self.__mots[randint(0,len(self.__mots)-1)]#on tire un eniter au hasard entre 0 et la longueur de la liste mot 
         self.__trouve=["*" for i in range (len(self.__mot))]
-        self.__Mot.config(text="Mot :"+"*"*len(self.__mot))
+        self.__mot_afficher.config(text="Mot :"+"*"*len(self.__mot))
             
 if __name__ == "__main__":
     fen = FenPrincipale()
