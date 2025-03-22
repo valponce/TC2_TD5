@@ -6,19 +6,19 @@ from tkinter import colorchooser
 class ZoneAffichage(Canvas):
     def __init__(self, parent, largeur, hauteur):
         Canvas.__init__(self, parent, width=largeur, height=hauteur,background="white")
-        self.__couleur=["black","black"]
         self.formes=[Rectangle(self, 50,  270, 200,  26, "dark blue"),Rectangle(self, 87,   83,  26, 200, "dark blue")
                 ,Rectangle(self, 87,   70, 150,  26, "dark blue"),Rectangle(self, 183,  67,  10,  40, "dark blue")
-                ,Ellipse(self, 187, 123,  15,  15, self.__couleur[0]),Rectangle(self, 185.5, 133, 5,  60, self.__couleur[0])
-                ,Rectangle(self, 145, 150,  40, 5, self.__couleur[1]),Rectangle(self, 188, 150,  40,  5, self.__couleur[1])
-                ,Rectangle(self, 181, 187,  5,  50, self.__couleur[1]),Rectangle(self, 191, 187,  5,  50, self.__couleur[1])]
+                ,Ellipse(self, 187, 123,  15,  15, "black"),Rectangle(self, 185.5, 133, 5,  60, "black")
+                ,Rectangle(self, 145, 150,  40, 5, "black"),Rectangle(self, 188, 150,  40,  5, "black")
+                ,Rectangle(self, 181, 187,  5,  50, "black"),Rectangle(self, 191, 187,  5,  50, "black")]
         # Base, Poteau, Traverse, Corde,Tete, Tronc,Bras gauche et droit, Jambes gauche et droite
-        
-    #def changer_couleur
-    
-    def selection_couleur(self):
-        self.__couleur=[colorchooser.askcolor()[1],colorchooser.askcolor()[2]]
-
+   
+    def setCouleurEchafaudage(self):
+       couleur=colorchooser.askcolor()[1]
+       for i in range(4):
+           self.formes[i].set_couleur(couleur)
+       
+   
 class MonBoutonLettre(Button):
     def __init__(self,parent,i):
         lettre=chr(ord('A')+i)
@@ -39,7 +39,6 @@ class FenPrincipale(Tk):
         #self.__lettres=[chr(ord('A')+i) for i in range(26)]
         self.__boutons=[]
         self.__listeMots=None
-        self.__mot_affiche=None
         self.__mot=""
         self.__trouve=[]
         self.__essais=[]
@@ -48,19 +47,32 @@ class FenPrincipale(Tk):
         
         
         #Création barre outils
-        barreOutils= Frame(self,bg="light blue")
-        barreOutils.pack(side=TOP, padx=30,pady=10)
+        self.__barreOutils= Frame(self,bg="light blue")
+        self.__barreOutils.pack(side=TOP, padx=30,pady=10)
+               
         
-        boutonNouvellePartie=Button(barreOutils, text='Nouvelle partie',bg="white")
+        boutonNouvellePartie=Button(self.__barreOutils, text='Nouvelle partie',bg="white")
         boutonNouvellePartie.pack(side=LEFT, padx=10, pady=5)
         
-        boutonUndo = Button(barreOutils, text='Undo',bg="white")
+        boutonUndo = Button(self.__barreOutils, text='Undo',bg="white")
         boutonUndo.pack(side=LEFT, padx=15, pady=5)
         
-        boutonCouleur = Button(barreOutils, text='Couleur',bg="white")
+        boutonCouleur = Menubutton(self.__barreOutils, text='Couleur',bg="white")
         boutonCouleur.pack(side=LEFT, padx=15, pady=5)
         
-        boutonQuitter = Button(barreOutils, text='Quitter',bg="white")
+        #Création de la zone de dessin 
+        self.canvas=ZoneAffichage(self, 300,300)
+        self.canvas.pack(side=TOP, padx=30, pady=5)
+        
+        menuCouleur = Menu(boutonCouleur)
+        menuCouleur.add_command(label = "Couleur de l'échafaudage", command = self.canvas.setCouleurEchafaudage)
+        #menuCouleur.add_command(label = 'Couleur du pendu', command = self.canvas.setCouleurPendu)
+        #menuCouleur.add_command(label = "Couleur du background", command = self.setCouleurBg)
+        
+        boutonCouleur.config(menu=menuCouleur)
+      
+        
+        boutonQuitter = Button(self.__barreOutils, text='Quitter',bg="white")
         boutonQuitter.pack(side=LEFT, padx=15, pady=5)
         
        
@@ -81,20 +93,14 @@ class FenPrincipale(Tk):
                Lettre.grid(row=4, column=i-20,padx=5, pady=5)
         
         #Emplacement du mot
-        Mot=Label(self,text="Mot:")
-        self.__mot_afficher=Mot
-        Mot.pack(side=BOTTOM,padx=30,pady=10)
-        
-        #Création de la zone de dessin 
-        self.canvas=ZoneAffichage(self, 300,300)
-        self.canvas.pack(side=TOP, padx=30, pady=5)
-        
-        
+        self.__Mot=Label(self,text="Mot:")
+        self.__Mot.pack(side=BOTTOM,padx=30,pady=10)
         
         boutonQuitter.config(command=self.destroy)
         boutonNouvellePartie.config(command=self.nouvelle_partie)
-        boutonCouleur.config(command=self.canvas.selection_couleur)
         boutonUndo.config(command=self.retour_en_arriere)
+    
+
     
     def retour_en_arriere(self):
         if self.__essais:
@@ -109,7 +115,7 @@ class FenPrincipale(Tk):
                         self.__trouve[i]="*"
                 separateur=""
                 texte="Mot :"+str(separateur.join(self.__trouve))
-                self.__mot_afficher.config(text=texte) 
+                self.__Mot.config(text=texte) 
             
     def traitement(self,lettre):
         valeur=False
@@ -119,7 +125,7 @@ class FenPrincipale(Tk):
                 valeur=True
         separateur=""
         texte="Mot :"+str(separateur.join(self.__trouve))
-        self.__mot_afficher.config(text=texte) 
+        self.__Mot.config(text=texte) 
         if not(valeur):
             self.canvas.formes[self.__nb_manques].set_state('normal')
             self.__nb_manques+=1
@@ -132,11 +138,11 @@ class FenPrincipale(Tk):
         if texte[5:]==self.__mot:
             for b in self.__boutons:
                 b.config(state="disabled")
-            self.__mot_afficher.config(text="Vous avez gagné. Le mot était:"+self.__mot)
+            self.__Mot.config(text="Vous avez gagné. Le mot était:"+self.__mot)
         if self.__nb_manques==10:
             for b in self.__boutons:
                 b.config(state="disabled")
-            self.__mot_afficher.config(text="PERDU")
+            self.__Mot.config(text="PERDU")
         
     def chargeMots(self):
         f = open('mots.txt', 'r')
@@ -157,7 +163,7 @@ class FenPrincipale(Tk):
             f.set_state('hidden')
         self.__mot=self.__mots[randint(0,len(self.__mots)-1)]#on tire un eniter au hasard entre 0 et la longueur de la liste mot 
         self.__trouve=["*" for i in range (len(self.__mot))]
-        self.__mot_afficher.config(text="Mot :"+"*"*len(self.__mot))
+        self.__Mot.config(text="Mot :"+"*"*len(self.__mot))
             
 if __name__ == "__main__":
     fen = FenPrincipale()
