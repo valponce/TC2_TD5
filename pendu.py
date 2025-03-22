@@ -1,16 +1,24 @@
 from tkinter import *
 from random import randint
 from formes import*
+from tkinter import colorchooser
 
 class ZoneAffichage(Canvas):
     def __init__(self, parent, largeur, hauteur):
         Canvas.__init__(self, parent, width=largeur, height=hauteur,background="white")
+        self.__couleur=["black","black"]
         self.formes=[Rectangle(self, 50,  270, 200,  26, "dark blue"),Rectangle(self, 87,   83,  26, 200, "dark blue")
                 ,Rectangle(self, 87,   70, 150,  26, "dark blue"),Rectangle(self, 183,  67,  10,  40, "dark blue")
-                ,Ellipse(self, 187, 123,  15,  15, "black"),Rectangle(self, 185.5, 133, 5,  60, "black")
-                ,Rectangle(self, 145, 150,  40, 5, "black"),Rectangle(self, 188, 150,  40,  5, "black")
-                ,Rectangle(self, 181, 187,  5,  50, "black"),Rectangle(self, 191, 187,  5,  50, "black")]
+                ,Ellipse(self, 187, 123,  15,  15, self.__couleur[0]),Rectangle(self, 185.5, 133, 5,  60, self.__couleur[0])
+                ,Rectangle(self, 145, 150,  40, 5, self.__couleur[1]),Rectangle(self, 188, 150,  40,  5, self.__couleur[1])
+                ,Rectangle(self, 181, 187,  5,  50, self.__couleur[1]),Rectangle(self, 191, 187,  5,  50, self.__couleur[1])]
         # Base, Poteau, Traverse, Corde,Tete, Tronc,Bras gauche et droit, Jambes gauche et droite
+        
+    #def changer_couleur
+    
+    def selection_couleur(self):
+        self.__couleur=[colorchooser.askcolor()[1],colorchooser.askcolor()[2]]
+
 class MonBoutonLettre(Button):
     def __init__(self,parent,i):
         lettre=chr(ord('A')+i)
@@ -34,6 +42,7 @@ class FenPrincipale(Tk):
         self.__mot_affiche=None
         self.__mot=""
         self.__trouve=[]
+        self.__essais=[]
         self.__nb_manques=0
         self.chargeMots()
         
@@ -45,8 +54,16 @@ class FenPrincipale(Tk):
         boutonNouvellePartie=Button(barreOutils, text='Nouvelle partie',bg="white")
         boutonNouvellePartie.pack(side=LEFT, padx=10, pady=5)
         
+        boutonUndo = Button(barreOutils, text='Undo',bg="white")
+        boutonUndo.pack(side=LEFT, padx=15, pady=5)
+        
+        boutonCouleur = Button(barreOutils, text='Couleur',bg="white")
+        boutonCouleur.pack(side=LEFT, padx=15, pady=5)
+        
         boutonQuitter = Button(barreOutils, text='Quitter',bg="white")
         boutonQuitter.pack(side=LEFT, padx=15, pady=5)
+        
+       
         
         #Création du clavier
         clavier= Frame(self,bg="ivory")
@@ -72,17 +89,28 @@ class FenPrincipale(Tk):
         self.canvas=ZoneAffichage(self, 300,300)
         self.canvas.pack(side=TOP, padx=30, pady=5)
         
-        #Configuration des boutons
-        #self.__boutons[0].config(command= lambda :self.traitement(0))
-        #self.__boutons[1].config(command= lambda :self.traitement(1))
+        
         
         boutonQuitter.config(command=self.destroy)
         boutonNouvellePartie.config(command=self.nouvelle_partie)
+        boutonCouleur.config(command=self.canvas.selection_couleur)
+        boutonUndo.config(command=self.retour_en_arriere)
     
-        # Base, Poteau, Traverse, Corde
-        
-
-        
+    def retour_en_arriere(self):
+        if self.__essais:
+            lettre,valeur=self.__essais.pop()
+            self.__boutons[ord(lettre)-65].config(state='normal')
+            if not(valeur):
+                self.__nb_manques-=1
+                self.canvas.formes[self.__nb_manques].set_state('hidden')
+            else:
+                for i in range(len(self.__trouve)):
+                    if lettre==self.__trouve[i]:
+                        self.__trouve[i]="*"
+                separateur=""
+                texte="Mot :"+str(separateur.join(self.__trouve))
+                self.__mot_afficher.config(text=texte) 
+            
     def traitement(self,lettre):
         valeur=False
         for i in range(len(self.__mot)):
@@ -95,10 +123,12 @@ class FenPrincipale(Tk):
         if not(valeur):
             self.canvas.formes[self.__nb_manques].set_state('normal')
             self.__nb_manques+=1
+        self.__essais.append((lettre,valeur))
         self.fin_partie(texte)
 
 
     def fin_partie(self,texte):
+        self.__essais=[]
         if texte[5:]==self.__mot:
             for b in self.__boutons:
                 b.config(state="disabled")
@@ -116,6 +146,7 @@ class FenPrincipale(Tk):
 
     def nouvelle_partie(self):
         self.__nb_manques=0
+        self.__essais=[]
         self.nouveau_mot()
         for b in self.__boutons:
             b.config(state="normal")
