@@ -2,7 +2,42 @@ from tkinter import *
 from random import randint
 from formes import*
 from tkinter import colorchooser
+import sqlite3
 
+#Création de la base de données
+
+class BaseDonnees():
+    def __init__(self,typ,fichier):        
+        self.__con = typ.connect(fichier)
+        self.__cur = self.__con.cursor()
+        # res=self.__cur.execute("SELECT name FROM sqlite_master WHERE name='spam'")
+        # if res.fetchone() is None:
+        #      self.__cur.execute("CREATE TABLE scores(pseudo, echecs, victoires)")
+        
+    def ajout_joueur(self,pseudo):
+        self.__cur.execute("""INSERT INTO scores VALUES ('pseudo','0','0'
+                           
+                           )""")
+        self.__con.commit()
+        
+    def set_victoire(self,nom):
+        res=self.__cur.execute("SELECT victoires FROM scores WHERE pseudo='nom'")
+        l=res.fetchone()
+        nb_v=l[0]+1
+        self.__cur.execute("UPDATE scores SET victoires= 'nb_v' WHERE pseudo='nom'")
+        self.__con.commit()
+        
+    def set_echec(self,nom):
+        res=self.__cur.execute("SELECT victoires FROM scores WHERE pseudo='nom'")
+        l=res.fetchone()
+        nb_echec=l[0]+1
+        
+        self.__cur.execute("UPDATE scores SET victoires= 'nb_echec' WHERE pseudo='nom'")
+        self.__con.commit()
+    
+    def score(self,nom):
+        return(self.__cur.execute("SELECT echecs,victoires FROM scores WHERE pseudo='nom'"))
+    
 class ZoneAffichage(Canvas):
     def __init__(self, parent, largeur, hauteur):
         Canvas.__init__(self, parent, width=largeur, height=hauteur,background="white")
@@ -24,20 +59,27 @@ class ZoneAffichage(Canvas):
            self.formes[i].set_couleur(couleur)
    
 class MonBoutonLettre(Button):
-    def __init__(self,parent,i):
+    def __init__(self,parent,i ,fenetre):
         lettre=chr(ord('A')+i)
         Button.__init__(self,parent,text=lettre,width=6)
         self.__lettre=lettre
+        self.__fen=fenetre
         self.config(bg='white',state='disabled',command=self.cliquer)
     def cliquer(self):
         self.config(state='disabled')
-        fen.traitement(self.__lettre)
+        self.__fen.traitement(self.__lettre)
 
 class FenIntro(Tk):
     def __init__(self):
         Tk.__init__(self)
         self.__Frame1=Frame(self,bg='light grey')
         self.__Frame1.pack()
+        self.__base=BaseDonnees(sqlite3,"Joueurs")
+        # photo = PhotoImage(file='image_pendu.png')
+
+        # canvas = Canvas(self.__Frame1,width=photo.width(), height=photo.height())
+        # canvas.create_image(0, 0, anchor=NW, image=photo)
+        # canvas.pack()
         
         label=Label(self.__Frame1,text="Entrez votre pseudo:",bg='light grey')
         label.pack(side=TOP,pady=10)
@@ -51,14 +93,14 @@ class FenIntro(Tk):
         
         BouttonValider.config(command=self.lancement_jeu)
     
-    def lancement_jeu(self):
+    def lancement_jeu(self):            
         self.destroy()
-        fen = FenPrincipale()
+        self.__base.ajout_joueur(self.__pseudo)
+        fen= FenPrincipale(self.__base,self.__pseudo)
         fen.mainloop()
-        return(print(self.__pseudo))
         
 class FenPrincipale(Tk):
-    def __init__(self):
+    def __init__(self,base,joueur):
         Tk.__init__(self)
 
         # paramètres de la fenêtre
@@ -73,7 +115,8 @@ class FenPrincipale(Tk):
         self.__essais=[]
         self.__nb_manques=0
         self.chargeMots()
-        
+        self.__pseudo=joueur
+        self.__base_donnees=base
         
         #Création barre outils
         self.__barreOutils= Frame(self,bg="light blue")
@@ -111,7 +154,7 @@ class FenPrincipale(Tk):
         clavier= Frame(self,bg="ivory")
         clavier.pack(side=BOTTOM,padx=30,pady=15)
         for i in range(26):
-           Lettre=MonBoutonLettre(clavier,i)
+           Lettre=MonBoutonLettre(clavier,i,self)
            self.__boutons.append(Lettre)
            if i<7:
                Lettre.grid(row=1, column=i,padx=5, pady=5)
@@ -173,13 +216,20 @@ class FenPrincipale(Tk):
         if texte[5:]==self.__mot:
             for b in self.__boutons:
                 b.config(state="disabled")
-            self.__mot_afficher.config(text="Vous avez gagné. Le mot était:"+self.__mot)
+            self.__base_donnees.set_victoire(self.__pseudo)
+            e,v=self.__bas_donnes.score(self.__pseudo)
+            self.__mot_afficher.config(text=v+"Vous avez gagné. Le mot était:"+self.__mot)
             self.__essais=[] #empêche de Undo quand la partie est gagné
+            
         if self.__nb_manques==10:
             for b in self.__boutons:
                 b.config(state="disabled")
-            self.__mot_afficher.config(text="PERDU")
+            self.__base_donnees.set_echec(self.__pseudo)
+            e,v=self.__bas_donnes.score(self.__pseudo)
+            self.__mot_afficher.config(text="PERDU"+e)
             self.__essais=[] #empêche de Undo quand la partie est perdu
+        self.__base_donnees.score(self.__pseudo)
+        
         
     def chargeMots(self):
         f = open('mots.txt', 'r')
@@ -203,6 +253,8 @@ class FenPrincipale(Tk):
         self.__mot_afficher.config(text="Mot :"+"*"*len(self.__mot))
             
 if __name__ == "__main__":
+    
+    #bas.mainloop()
     intro=FenIntro()
     intro.mainloop()
     
