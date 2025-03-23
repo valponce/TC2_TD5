@@ -32,6 +32,30 @@ class MonBoutonLettre(Button):
     def cliquer(self):
         self.config(state='disabled')
         fen.traitement(self.__lettre)
+
+class FenIntro(Tk):
+    def __init__(self):
+        Tk.__init__(self)
+        self.__Frame1=Frame(self,bg='light grey')
+        self.__Frame1.pack()
+        
+        label=Label(self.__Frame1,text="Entrez votre pseudo:",bg='light grey')
+        label.pack(side=TOP,pady=10)
+        
+        entry=Entry(self.__Frame1)
+        entry.pack(side=TOP,padx=20,pady=6)
+        self.__pseudo=entry.get()
+        
+        BouttonValider=Button(self.__Frame1, text='Valider',bg="white")
+        BouttonValider.pack(side=TOP,pady=10)
+        
+        BouttonValider.config(command=self.lancement_jeu)
+    
+    def lancement_jeu(self):
+        self.destroy()
+        fen = FenPrincipale()
+        fen.mainloop()
+        return(print(self.__pseudo))
         
 class FenPrincipale(Tk):
     def __init__(self):
@@ -56,6 +80,7 @@ class FenPrincipale(Tk):
         self.__barreOutils.pack(side=TOP, padx=30,pady=10)
         
        
+        
         boutonNouvellePartie=Button(self.__barreOutils, text='Nouvelle partie',bg="white")
         boutonNouvellePartie.pack(side=LEFT, padx=10, pady=5)
         
@@ -106,7 +131,7 @@ class FenPrincipale(Tk):
         boutonQuitter.config(command=self.destroy)
         boutonNouvellePartie.config(command=self.nouvelle_partie)
         boutonUndo.config(command=self.retour_en_arriere)
-        
+
 
     def setCouleurBg(self):
         couleur=couleur=colorchooser.askcolor()[1]
@@ -178,5 +203,6 @@ class FenPrincipale(Tk):
         self.__mot_afficher.config(text="Mot :"+"*"*len(self.__mot))
             
 if __name__ == "__main__":
-    fen = FenPrincipale()
-    fen.mainloop()
+    intro=FenIntro()
+    intro.mainloop()
+    
