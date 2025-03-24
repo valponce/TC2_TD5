@@ -9,27 +9,28 @@ import sqlite3
 class BaseDonnees():
     def __init__(self,typ,fichier):        
         self.__con = typ.connect(fichier)
-        self.__cur = self.__con.cursor()
-        res=self.__cur.execute("SELECT name FROM sqlite_master WHERE name='scores'")
+        self.cur = self.__con.cursor()
+        res=self.cur.execute("SELECT name FROM sqlite_master WHERE name='scores'")
         if res.fetchone() is None:
-              self.__cur.execute("CREATE TABLE scores(pseudo TEXT, echecs INTEGER, victoires INTEGER)")
+              self.cur.execute("CREATE TABLE scores(pseudo TEXT, echecs INTEGER, victoires INTEGER)")
         
     def ajout_joueur(self,pseudo):
-        res=self.__cur.execute("SELECT pseudo FROM scores WHERE pseudo=:nom",{"nom":pseudo})
+        res=self.cur.execute("SELECT pseudo FROM scores WHERE pseudo=:nom",{"nom":pseudo})
         if res.fetchone() is None:
-            self.__cur.execute("""INSERT INTO scores VALUES (:pseudo,0,0)""",{"pseudo":pseudo})
+            self.cur.execute("""INSERT INTO scores VALUES (:pseudo,0,0)""",{"pseudo":pseudo})
             self.__con.commit()
 
     def set_victoire(self,nom):
-        self.__cur.execute("UPDATE scores SET victoires=victoires+ WHERE pseudo=:nom",{"nom":nom})
+        self.cur.execute("UPDATE scores SET victoires=victoires+1 WHERE pseudo=:nom",{"nom":nom})
         self.__con.commit()
         
     def set_echec(self,nom):       
-        self.__cur.execute("UPDATE scores SET echecs=echecs+1 WHERE pseudo=:nom",{"nom":nom})
+        self.cur.execute("UPDATE scores SET echecs=echecs+1 WHERE pseudo=:nom",{"nom":nom})
         self.__con.commit()
     
     def score(self,nom):
-        return(self.__cur.execute("SELECT echecs,victoires FROM scores WHERE pseudo=:nom",{"nom":nom}))
+        res=self.cur.execute("SELECT echecs,victoires FROM scores WHERE pseudo=:nom",{"nom":nom})
+        return(res.fetchone())
     
 class ZoneAffichage(Canvas):
     def __init__(self, parent, largeur, hauteur):
@@ -65,10 +66,12 @@ class MonBoutonLettre(Button):
 class FenIntro(Tk):
     def __init__(self):
         Tk.__init__(self)
+        
         self.__Frame1=Frame(self,bg='light grey')
         self.__Frame1.pack()
         self.__base=BaseDonnees(sqlite3,"Joueurs")
         self.__pseudo=None
+       
         # photo = PhotoImage(file='image_pendu.png')
 
         # canvas = Canvas(self.__Frame1,width=photo.width(), height=photo.height())
@@ -80,13 +83,24 @@ class FenIntro(Tk):
         
         self.__entry=Entry(self.__Frame1)
         self.__entry.pack(side=TOP,padx=20,pady=6)
-        
 
         BouttonValider=Button(self.__Frame1, text='Valider',bg="white")
         BouttonValider.pack(side=TOP,pady=10)
         
+        self.__BoutonClassement=Button(self.__Frame1,text='Classement',bg="white")
+        self.__BoutonClassement.pack(side=BOTTOM,pady=10)
+        
+        self.__BoutonClassement.config(command=self.afficher_classement)
         BouttonValider.config(command=self.lancement_jeu)
     
+    def afficher_classement(self):
+        self.__BoutonClassement.destroy()
+        res=self.__base.cur.execute("SELECT * FROM scores ORDER BY victoires DESC, echecs ASC")
+        resultat=res.fetchall()
+        for i in range(3):
+            label=Label(self.__Frame1,text=f"({i+1}). {resultat[i][0]}, Echecs:{resultat[i][1]}, Victoires:{resultat[i][2]}",bg='light grey')
+            label.pack(side=TOP,pady=10)
+        
     def lancement_jeu(self):
         self.__pseudo=self.__entry.get()          
         self.destroy()
@@ -212,14 +226,16 @@ class FenPrincipale(Tk):
             for b in self.__boutons:
                 b.config(state="disabled")
             self.__base_donnees.set_victoire(self.__pseudo)
-            self.__mot_afficher.config(text="Vous avez gagné. Le mot était:"+self.__mot)
+            e,v=self.__base_donnees.score(self.__pseudo)
+            self.__mot_afficher.config(text=f"Vous avez gagné. Le mot était:{self.__mot}. Echecs: {e} Victoires:{v}")
             self.__essais=[] #empêche de Undo quand la partie est gagné
             
         if self.__nb_manques==10:
             for b in self.__boutons:
                 b.config(state="disabled")
             self.__base_donnees.set_echec(self.__pseudo)
-            self.__mot_afficher.config(text="PERDU")
+            e,v=self.__base_donnees.score(self.__pseudo)
+            self.__mot_afficher.config(text=f"PERDU. Echecs: {e} Victoires:{v}")
             self.__essais=[] #empêche de Undo quand la partie est perdu
        
         
@@ -245,8 +261,7 @@ class FenPrincipale(Tk):
         self.__mot_afficher.config(text="Mot :"+"*"*len(self.__mot))
             
 if __name__ == "__main__":
-    
-    #bas.mainloop()
+
     intro=FenIntro()
     intro.mainloop()
     
